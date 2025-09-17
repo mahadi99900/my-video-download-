@@ -30,7 +30,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 # Your Telegram Bot Token
-BOT_TOKEN = "8312197624:AAGc8e8rdTbzPG1ar0Z7s4usOqDcUWXQjHU" # আপনার বট টোকেন
+BOT_TOKEN = "8257221379:AAGpRJXMHkRNLsson3ETnaZPwZZJfCK5I5E" # আপনার বট টোকেন
 
 # A set to track users who are currently downloading
 DOWNLOADING_USERS = set()
