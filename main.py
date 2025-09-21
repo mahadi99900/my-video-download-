@@ -14,7 +14,7 @@ import logging
 ‎logger = logging.getLogger(__name__)
 ‎
 ‎# আপনার দেওয়া টেলিগ্রাম বটের টোকেন
-‎BOT_TOKEN = "8257221379:AAGpRJXMHkRNLsson3ETnaZPwZZJfCK5I5E"
+‎BOT_TOKEN = ""
 ‎
 ‎# /start কমান্ডের ফাংশন
 ‎async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
