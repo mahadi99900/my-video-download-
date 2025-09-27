@@ -2,10 +2,9 @@ import logging
 import os
 import sys
 import asyncio
-import time
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-from telegram.error import BadRequest
+from telegram.error import BadRequest, InvalidToken
 import yt_dlp
 
 # --- Setup basic logging ---
@@ -45,7 +44,6 @@ async def download_video(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         async def progress_hook(d):
             nonlocal last_update_time
             if d['status'] == 'downloading':
-                # Update status every 2 seconds to avoid API spam
                 current_time = time.time()
                 if current_time - last_update_time > 2:
                     percentage = d['_percent_str']
@@ -60,7 +58,7 @@ async def download_video(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                             f"ETA: {eta}"
                         )
                         last_update_time = current_time
-                    except BadRequest:  # Ignore if message content is unchanged
+                    except BadRequest:
                         pass
             elif d['status'] == 'finished':
                  await reply_msg.edit_text("✅ Download complete!\n\n📤 Now uploading to you...")
@@ -91,7 +89,7 @@ async def download_video(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await reply_msg.delete()
 
     except Exception as e:
-        logger.error(f"Error downloading {url}: {e}")
+        logger.error(f"Error in download_video: {e}", exc_info=True)
         error_message = str(e)
         if len(error_message) > 200:
             error_message = error_message[:200] + "..."
@@ -104,28 +102,34 @@ async def download_video(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             logger.info(f"Deleted local file: {filename}")
 
 
-def main() -> None:
-    """Starts the bot."""
+async def main() -> None:
+    """Starts the bot using the modern async with context manager."""
     
-    # --- Get bot token from user input (simple and visible) ---
     bot_token = input("Please paste your Telegram bot token and press Enter: ")
     if not bot_token:
         logger.error("Token was not provided! Exiting.")
         sys.exit(1)
     
-    # --- Initialize the bot application ---
+    # Build the application
     application = Application.builder().token(bot_token).build()
 
-    # --- Register handlers ---
+    # Register command and message handlers
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, download_video))
 
-    logger.info("Bot started successfully!")
-    
-    # --- Run the bot until manually stopped ---
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+    # The 'async with' block automatically handles application.initialize() on entry
+    # and application.shutdown() on exit, which gracefully handles startup and cleanup.
+    try:
+        async with application:
+            logger.info("Bot started successfully and is now polling...")
+            await application.run_polling(allowed_updates=Update.ALL_TYPES)
+    except InvalidToken:
+        logger.error("❌ Invalid Bot Token! Please get a correct token from @BotFather and restart.")
+    except (KeyboardInterrupt, SystemExit):
+        logger.info("Bot shutdown initiated by user (Ctrl+C).")
+    except Exception as e:
+        logger.error(f"An unexpected error occurred in main: {e}", exc_info=True)
 
 
 if __name__ == '__main__':
-    main()
-￼Enter
+    asyncio.run(main())
